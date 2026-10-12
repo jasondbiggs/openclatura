@@ -686,6 +686,10 @@ def test_anhydride_shortcut_binds_acid_halves_and_core_separately():
 
     assert steps
     data = steps[-1].data
+    descriptor = data["descriptor"]
+    assert descriptor["family"] == "acyl"
+    assert descriptor["derivative"] == "anhydride"
+    assert descriptor["linker_paths"] == [[1, 3, 4]]
     bindings = data["name_atom_bindings"]
     assert {binding["role"] for binding in bindings} == {"anhydride_half", "anhydride_core"}
     assert not any(binding["role"] == "anhydride_component" for binding in bindings)

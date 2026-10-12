@@ -56,6 +56,7 @@ class AnhydrideComponentName:
 
     name: str
     bindings: tuple[NameAtomBinding, ...]
+    descriptor: FunctionalGroupDescriptor
 
 
 @dataclass(frozen=True)
@@ -3299,5 +3300,9 @@ def try_name_anhydride_component_result(
             atom_ids=core_atoms,
             bond_ids=core_bonds,
         )
-        return AnhydrideComponentName(name=name, bindings=half_bindings + (core_binding,))
+        return AnhydrideComponentName(
+            name=name,
+            bindings=half_bindings + (core_binding,),
+            descriptor=descriptor,
+        )
     return None
