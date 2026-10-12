@@ -3272,10 +3272,12 @@ def try_name_anhydride_component_result(
                 ),
             )
         else:
-            if len(bridge_path) == 4:
+            half_order = tuple(str(half["name"]) for half in halves)
+            bridge_symbols = tuple(mol.atoms[atom].symbol for atom in bridge_path[1:-1])
+            if len(bridge_symbols) == 2 and bridge_symbols[0] != bridge_symbols[1]:
                 halves[0]["name"] = f"{mol.atoms[bridge_path[1]].symbol}-{halves[0]['name']}"
                 halves[1]["name"] = f"{mol.atoms[bridge_path[2]].symbol}-{halves[1]['name']}"
-            ordered_halves = sorted(halves, key=lambda half: str(half["name"]))
+            ordered_halves = [half for _name, half in sorted(zip(half_order, halves, strict=True))]
             name = f"{ordered_halves[0]['name']} {ordered_halves[1]['name']} {class_name}"
             half_bindings = tuple(
                 NameAtomBinding(

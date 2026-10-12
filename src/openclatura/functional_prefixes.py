@@ -9,6 +9,7 @@ from .assembly_parts import NameTokenBinding, SubstituentItem, rendered_substitu
 from .assembly_prefixes import substituent_sort_key
 from .chalcogen_roles import ChalcogenLigandRole, DerivativeKind, FunctionalFamily
 from .chalcogen_vocabulary import (
+    acyl_center_prefix,
     central_linkage_prefix,
     chalcogen_substituent_suffix,
     resolve_central_acid_rule,
@@ -113,6 +114,28 @@ def peroxy_ester_prefix_from_group(
 def ester_prefix_handler(context: PrefixContext, group: PerceivedGroup) -> str:
     if group.key in RULES.prefixes.peroxy_ester_groups:
         return peroxy_ester_prefix_from_group(context.mol, group, context.sub_exclude, context.branch_namer)
+    descriptor = group.descriptor
+    if descriptor is not None:
+        linkers = descriptor.ligands_with_role(ChalcogenLigandRole.CARBON_LINK)
+        doubles = descriptor.ligands_with_role(ChalcogenLigandRole.DOUBLE_BONDED)
+        if len(linkers) == 1 and len(doubles) == 1:
+            linker = linkers[0]
+            attachment = linker.attachment_atom
+            if attachment is not None:
+                branch = rendered_substituent_text(
+                    context.branch_namer(
+                        context.mol,
+                        attachment,
+                        context.sub_exclude | {linker.atom},
+                        upstream_atom=linker.atom,
+                    )
+                )
+                ligand = format_element_substituent(
+                    "",
+                    branch,
+                    chalcogen_substituent_suffix(linker.element),
+                )
+                return f"({strip_outer_parentheses(ligand)}{acyl_center_prefix(doubles[0].element)})"
     return ester_prefix_from_group(context.mol, group, context.sub_exclude, "carbonyl", context.branch_namer)
 
 
