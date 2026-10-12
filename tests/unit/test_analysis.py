@@ -3848,7 +3848,7 @@ def test_dynamic_and_projected_chalcogen_groups_expose_structural_descriptors():
     projected_groups = next(step for step in projected.decisions if step.phase is TracePhase.PERCEPTION).data["groups"]
     ester = next(group for group in projected_groups if group["key"] == "ester")
     assert ester["descriptor"]["linker_paths"] == [[3, 2, 1]]
-    assert any("registered chalcogen citation route" in reason for reason in ester["reasons"])
+    assert any("competing nitrogen derivative" in reason for reason in ester["reasons"])
 
 
 def test_recursive_substituent_trace_segments_include_nested_decisions():
