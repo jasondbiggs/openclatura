@@ -1004,9 +1004,7 @@ def _acyl_chalcogen_group(
     ):
         terminal_atom = single_ligand.attachment_atom
         terminal_ligand = (
-            classify_chalcogen_ligand(mol, single_ligand.atom, terminal_atom)
-            if terminal_atom is not None
-            else None
+            classify_chalcogen_ligand(mol, single_ligand.atom, terminal_atom) if terminal_atom is not None else None
         )
         terminal_roles = {
             ChalcogenLigandRole.HYDROGEN_BEARING,
@@ -1045,9 +1043,7 @@ def _acyl_chalcogen_group(
                     attachment,
                     {carbon, double_ligand.atom, single_ligand.atom},
                     trace_descriptor=descriptor,
-                    decision_reasons=(
-                        "A competing nitrogen derivative retains the registered carbamate route.",
-                    ),
+                    decision_reasons=("A competing nitrogen derivative retains the registered carbamate route.",),
                 ),
             )
     # A centre carrying a nitrogen or a typed leaving group is not a plain

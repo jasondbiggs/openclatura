@@ -625,6 +625,5 @@ def test_polonium_is_parseable_but_has_an_explicit_unvalidated_boundary():
     result = oc.name("CC(=[Po])[OH]")
     assert not result.ok
     assert result.error == (
-        "UnsupportedChalcogenNomenclatureError: "
-        "Organic functional-group nomenclature is not validated for: Po"
+        "UnsupportedChalcogenNomenclatureError: Organic functional-group nomenclature is not validated for: Po"
     )

@@ -481,10 +481,7 @@ def resolve_anhydride_rule(descriptor: FunctionalGroupDescriptor) -> tuple[str, 
         and bridge_elements == (Chalcogen.OXYGEN,)
     ):
         return RULES.chalcogens.policies["anhydride"]["standard_key"], None
-    sites = "_".join(
-        element.value
-        for element in (left_double.element, *bridge_elements, right_double.element)
-    )
+    sites = "_".join(element.value for element in (left_double.element, *bridge_elements, right_double.element))
     key = f"anhydride_{sites}"
     elements = (left_double.element, *bridge_elements, right_double.element)
     policy = RULES.chalcogens.policies["anhydride"]

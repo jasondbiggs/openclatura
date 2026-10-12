@@ -183,9 +183,7 @@ def double_ligand_for_center(
     """Return the unique double-bonded ligand belonging to ``center``."""
 
     matches = tuple(
-        ligand
-        for ligand in descriptor.ligands_with_role(ChalcogenLigandRole.DOUBLE_BONDED)
-        if ligand.center == center
+        ligand for ligand in descriptor.ligands_with_role(ChalcogenLigandRole.DOUBLE_BONDED) if ligand.center == center
     )
     if len(matches) != 1:
         raise AcylDescriptorValidationError(
@@ -287,9 +285,7 @@ def acyl_linkage_view(
             or atom.total_h_count != 0
             or set(mol.get_neighbors(bridge_atom)) != {previous_atom, next_atom}
         ):
-            raise AcylDescriptorValidationError(
-                f"Bridge atom {bridge_atom} is not a complete neutral chalcogen linker"
-            )
+            raise AcylDescriptorValidationError(f"Bridge atom {bridge_atom} is not a complete neutral chalcogen linker")
         ligand = classify_chalcogen_ligand(mol, previous_atom, bridge_atom)
         if ligand is None or ligand.attachment_atom != next_atom:
             raise AcylDescriptorValidationError(
