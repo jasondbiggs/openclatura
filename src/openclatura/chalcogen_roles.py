@@ -200,10 +200,11 @@ def is_complete_acyl_end(
 ) -> bool:
     """Return whether one linkage end is a complete formyl/carbyl acyl site.
 
-    The bounded carboxylic-anhydride route requires the carbonyl carbon's
-    remaining valence to be occupied by either hydrogen or one carbon
-    substituent. A second heteroatom identifies a different family, such as a
-    carbonate or carbamate, even when it lies on a C(=E)-E-C(=E) path.
+    The bounded carboxylic-anhydride route normally requires hydrogen or one
+    carbon substituent.  A heteroatom attachment can also anchor an established
+    parent when the component beyond it has parent-defining ring or multiple-
+    bond topology.  A simple heteroalkyl ligand instead identifies another
+    derivative family, such as a carbonate or carbamate.
     """
 
     atom = mol.atoms[center]
@@ -229,7 +230,30 @@ def is_complete_acyl_end(
         return False
     substituent = next(iter(remaining))
     substituent_bond = mol.get_bond(center, substituent)
-    return mol.atoms[substituent].is_carbon and substituent_bond is not None and substituent_bond.order == 1
+    if substituent_bond is None or substituent_bond.order != 1:
+        return False
+    if mol.atoms[substituent].is_carbon:
+        return True
+
+    component = {substituent}
+    frontier = [substituent]
+    while frontier:
+        current = frontier.pop()
+        for neighbor in mol.get_neighbors(current):
+            if neighbor == center or neighbor in component:
+                continue
+            component.add(neighbor)
+            frontier.append(neighbor)
+
+    component_edges = {
+        mol.get_bond(left, right).idx
+        for left in component
+        for right in mol.get_neighbors(left)
+        if right in component and left < right
+    }
+    has_cycle = len(component_edges) >= len(component)
+    has_multiple_bond = any(mol.bonds[bond_id].order > 1 for bond_id in component_edges)
+    return has_cycle or has_multiple_bond
 
 
 def chalcogen_for_symbol(symbol: str) -> Chalcogen | None:
