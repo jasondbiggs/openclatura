@@ -16,6 +16,7 @@ from .chalcogen_roles import (
     chalcogen_for_symbol,
     classify_chalcogen_ligand,
     classify_peroxide_linkages,
+    is_complete_acyl_end,
 )
 from .chalcogen_vocabulary import (
     resolve_acyl_rule,
@@ -1452,8 +1453,11 @@ def _chalcogen_anhydride_groups(mol: Molecule, consumed: set[int]) -> list[Perce
             if second_center is None or second_center == first_center.idx or not mol.atoms[second_center].is_carbon:
                 continue
             second_double = _terminal_double_chalcogen(mol, second_center, consumed)
-            if second_double is None or _connected_without_bridge(
-                mol, first_center.idx, second_center, set(bridge_atoms)
+            if (
+                second_double is None
+                or not is_complete_acyl_end(mol, first_center.idx, first_double, first_bridge_atom)
+                or not is_complete_acyl_end(mol, second_center, second_double, bridge_atoms[-1])
+                or _connected_without_bridge(mol, first_center.idx, second_center, set(bridge_atoms))
             ):
                 continue
             identity = (frozenset({first_center.idx, second_center}), tuple(sorted(bridge_atoms)))

@@ -192,6 +192,46 @@ def double_ligand_for_center(
     return matches[0]
 
 
+def is_complete_acyl_end(
+    mol: Molecule,
+    center: int,
+    double_ligand: ChalcogenLigand,
+    linkage_atom: int,
+) -> bool:
+    """Return whether one linkage end is a complete formyl/carbyl acyl site.
+
+    The bounded carboxylic-anhydride route requires the carbonyl carbon's
+    remaining valence to be occupied by either hydrogen or one carbon
+    substituent. A second heteroatom identifies a different family, such as a
+    carbonate or carbamate, even when it lies on a C(=E)-E-C(=E) path.
+    """
+
+    atom = mol.atoms[center]
+    if (
+        not atom.is_carbon
+        or atom.charge != 0
+        or atom.radical_electrons != 0
+        or atom.is_aromatic
+        or double_ligand.center != center
+        or double_ligand.role is not ChalcogenLigandRole.DOUBLE_BONDED
+    ):
+        return False
+
+    double_bond = mol.get_bond(center, double_ligand.atom)
+    linkage_bond = mol.get_bond(center, linkage_atom)
+    if double_bond is None or double_bond.order != 2 or linkage_bond is None or linkage_bond.order != 1:
+        return False
+
+    remaining = set(mol.get_neighbors(center)) - {double_ligand.atom, linkage_atom}
+    if not remaining:
+        return atom.total_h_count == 1
+    if len(remaining) != 1 or atom.total_h_count != 0:
+        return False
+    substituent = next(iter(remaining))
+    substituent_bond = mol.get_bond(center, substituent)
+    return mol.atoms[substituent].is_carbon and substituent_bond is not None and substituent_bond.order == 1
+
+
 def chalcogen_for_symbol(symbol: str) -> Chalcogen | None:
     """Return the typed chalcogen for an element symbol, if supported."""
 

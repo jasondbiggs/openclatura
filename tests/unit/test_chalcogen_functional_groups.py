@@ -237,6 +237,23 @@ def test_anhydride_bridges_and_acyl_sites_are_independent(smiles: str, expected:
 
 
 @pytest.mark.parametrize(
+    "smiles",
+    (
+        "COC(=O)OC(C)=O",
+        "CNC(=O)OC(C)=O",
+        "CSC(=S)SC(C)=S",
+        "COC(=[Se])S[Te]C(C)=O",
+    ),
+)
+def test_anhydride_requires_complete_formyl_or_carbyl_acyl_ends(smiles: str):
+    groups = perceive_groups(read_smiles(smiles))
+
+    assert not any(
+        group.descriptor is not None and group.descriptor.derivative is DerivativeKind.ANHYDRIDE for group in groups
+    )
+
+
+@pytest.mark.parametrize(
     ("smiles", "expected"),
     [
         ("CS(=O)(=O)O", "methanesulfonic acid"),
