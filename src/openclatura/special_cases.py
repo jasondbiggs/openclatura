@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 
 from .assembly_parts import NameAtomBinding, NameTokenBinding, rendered_substituent_text
 from .assembly_prefixes import substituent_sort_key
+from .canonical_ranks import canonical_ranks
 from .chains import get_cyclic_atoms
 from .chalcogen_roles import (
     DerivativeKind,
@@ -757,6 +758,19 @@ def simple_azine_parent_name(
                     first, second = sorted(ylidenes, key=substituent_sort_key)
                     return f"1-({first})-2-({second})hydrazine"
             continue
+        ranks = canonical_ranks(mol)
+        left_bond = mol.get_bond(c1, n1)
+        right_bond = mol.get_bond(c2, n2)
+        if (
+            ranks[c1] == ranks[c2]
+            and ranks[n1] == ranks[n2]
+            and left_bond is not None
+            and right_bond is not None
+            and left_bond.stereo == right_bond.stereo
+        ):
+            stereo = f"({left_bond.stereo})-" if left_bond.stereo in {"E", "Z"} else ""
+            cited_side = f"{stereo}{ylidene1}"
+            return f"1,2-bis[{cited_side}]hydrazine" if stereo else f"1,2-bis({cited_side})hydrazine"
         # Prefer the longer carbonyl parent; this follows parent-size
         # preference and keeps the shorter side as the ylidene hydrazone
         # modifier.

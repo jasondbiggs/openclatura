@@ -216,6 +216,12 @@ def test_peroxy_acyl_paths_preserve_orientation(smiles: str, expected: str):
     assert oc.name(smiles).name == expected
 
 
+def test_subordinate_peroxy_acyl_prefix_preserves_every_ordered_linker():
+    import openclatura as oc
+
+    assert oc.name("CCOC(=O)CC(=O)OSc1ccccc1").name == "ethyl 2-(phenylsulfanyloxycarbonyl)acetate"
+
+
 @pytest.mark.parametrize(
     ("smiles", "expected"),
     [
