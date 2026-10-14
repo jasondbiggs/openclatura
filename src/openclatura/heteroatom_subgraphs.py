@@ -28,6 +28,7 @@ from .namer_config import (
     SIMPLE_SULFANYL_PREFIXES,
 )
 from .naming_protocols import RecursiveSubgraphNamer
+from .naming_style import styled_thiol_prefix
 from .nitrogen_roles import terminal_n3_substituent_role
 from .nomenclature import RULES
 from .oxoacid_roles import OxoLigandRole, central_oxo_substituent_role
@@ -823,7 +824,7 @@ def name_sulfur_subgraph(
             return "thioxo"
         if mol.atoms[start_idx].charge == -1:
             return charged_heteroatom_prefix("S", -1, "single") or "sulfido"
-        return f"{stereo_prefix_text}{unsubstituted_prefix('S') or 'sulfanyl'}"
+        return f"{stereo_prefix_text}{styled_thiol_prefix(unsubstituted_prefix('S') or 'sulfanyl')}"
 
     if len(next_atoms) == 1:
         branch = _branch_name_text(branch_namer, mol, next_atoms[0], exclude_atoms | {start_idx}, start_idx)
@@ -833,7 +834,7 @@ def name_sulfur_subgraph(
             return f"({stereo_prefix_text}{branch}sulfanyl)"
         if branch:
             return format_element_substituent(stereo_prefix_text, branch, "sulfanyl", is_double=is_double)
-        return f"{stereo_prefix_text}{'sulfanylidene' if is_double else 'sulfanyl'}"
+        return f"{stereo_prefix_text}{'sulfanylidene' if is_double else styled_thiol_prefix('sulfanyl')}"
 
     branches = [
         br
