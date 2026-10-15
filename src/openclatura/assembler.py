@@ -28,6 +28,7 @@ from .name_assembly import NameAssemblyResult, rewrite_history_trace_data, token
 from .name_bindings import refresh_name_atom_bindings, refresh_parent_binding
 from .name_operations import HydroOperation
 from .name_postprocessing import apply_data_postprocessing
+from .naming_style import place_parent_locants
 
 
 def _post_process_name(name: str) -> str:
@@ -466,6 +467,10 @@ def assemble_name_raw(parts: AssemblyParts) -> str:
         core_name = _add_indicated_hydrogen_prefix(parts, core_name, allow_locant_elision=not spiro_subs)
         core_name, suffix_str = _move_added_hydrogen_to_suffix(parts, core_name, suffix_str)
         core_name += suffix_str
+        # A charged parent keeps its spelling: moving the first locant set of
+        # ``piperidin-1-ium-3-olate`` would detach the ium locant.
+        if not (parts.is_substituent or spiro_subs or parts.is_spiro_component or parts.parent_charges):
+            core_name = place_parent_locants(core_name)
     parent_needs_prefix_hyphen = bool(
         prefix_str and positive_parent_n_charges(parts) and parts.retained_name and parts.indicated_hydrogens
     )
