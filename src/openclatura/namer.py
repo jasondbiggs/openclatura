@@ -1721,6 +1721,9 @@ def _heteroatom_center_token_in_name(symbol: str, name: str) -> str:
         "P": ("phosphoryl", "phosphono", "phosphanylidene", "phosphanylidynemethyl", "phosphanyl", "phosphino"),
         "B": ("borylidene", "boryl", "boranuide"),
         "Si": ("silylidene", "silyl"),
+        "Ge": ("germylidene", "germyl"),
+        "Sn": ("stannylidene", "stannyl"),
+        "Pb": ("plumbylidene", "plumbyl"),
         "O": ("hydroperoxy", "peroxy", "hydroxy", "oxy", "oxido"),
         "N": ("ammonio", "azanidyl", "iminio", "amino", "imino", "nitrilo"),
     }.get(symbol, ())

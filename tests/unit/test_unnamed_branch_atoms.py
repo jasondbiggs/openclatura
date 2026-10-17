@@ -7,6 +7,30 @@ from openclatura import name_smiles, opsin_available, verify_with_opsin
 from openclatura.graph_io import read_smiles
 from openclatura.namer import name_subgraph
 
+# Germyl, stannyl and plumbyl groups had no prefix, and on a chain substituent
+# the chain was named without them: 2-ethynylpyridine for the trimethylstannyl
+# alkyne (lamalab-org/openclatura#129).
+CASES = {
+    "C[Sn](C)(C)C#Cc1ccccn1": "2-(2-(trimethylstannyl)ethynyl)pyridine",
+    "C[Ge](C)(C)C=Cc1cccs1": "2-(2-(trimethylgermyl)ethenyl)thiophene",
+    "C[Sn](C)(C)CCc1ccccn1": "2-(2-(trimethylstannyl)ethyl)pyridine",
+    "C[Sn](C)(C)Cc1ccccn1": "2-((trimethylstannyl)methyl)pyridine",
+    "C[Sn](C)(C)CC(=O)OC": "methyl 2-(trimethylstannyl)acetate",
+    "C[Sn](C)(C)c1ccccn1": "2-(trimethylstannyl)pyridine",
+    "C[Ge](C)(C)c1ccccn1": "2-(trimethylgermyl)pyridine",
+    "C[Pb](C)(C)CCc1ccccn1": "2-(2-(trimethylplumbyl)ethyl)pyridine",
+    "[SnH3]CCc1ccccn1": "2-(2-stannylethyl)pyridine",
+    "CCCC[Sn](CCCC)(CCCC)c1ccccn1": "2-(tributylstannyl)pyridine",
+    "C[Sn](C)(C)Oc1ccccn1": "2-((trimethylstannyl)oxy)pyridine",
+    "C[Sn](C)(C)CC[Si](C)(C)c1ccccn1": "2-(dimethyl(2-(trimethylstannyl)ethyl)silyl)pyridine",
+    # PubChem CID 12000583: the =CH-Sn(CH3)3 end of the chain was dropped.
+    "C/C=C(\\C)/[C@@H]([C@@H](C)[C@H](C/C=C(\\C)/C=C(\\C)/C/C(=C/[Sn](C)(C)C)/C)O[Si](C1=CC=CC=C1)"
+    "(C2=CC=CC=C2)C(C)(C)C)O[Si](CCC(C(C(F)(F)F)(F)F)(F)F)(C(C)C)C(C)C": (
+        "((tert-butyl)(((2E,4R,5S,6S,8E,10E,13E)-4-(((3,3,4,4,5,5,5-heptafluoropentyl)bis(propan-2-yl)silyl)oxy)"
+        "-3,5,9,11,13-pentamethyl-14-(trimethylstannyl)tetradeca-2,8,10,13-tetraen-6-yl)oxy)(phenyl)silyl)benzene"
+    ),
+}
+
 # Silicon is named, and a stannane or bismuthane parent is unaffected.
 GUARDS = {
     "C[Si](C)(C)C=Cc1cccs1": "2-(2-(trimethylsilyl)ethenyl)thiophene",
@@ -18,8 +42,7 @@ GUARDS = {
 }
 
 # Bismuth and aluminium have no substituent prefix. These were named without
-# the metal (2-ethylpyridine, 2-ethoxypyridine, ...), as the trimethylstannyl
-# alkyne was named 2-ethynylpyridine (lamalab-org/openclatura#129).
+# the metal (2-ethylpyridine, 2-ethoxypyridine, ...).
 UNNAMEABLE = [
     "C[Bi](C)CCc1ccccn1",
     "C[Bi](C)C#Cc1ccccn1",
@@ -27,6 +50,11 @@ UNNAMEABLE = [
     "C[Bi](C)CC[Si](C)(C)c1ccccn1",
     "C[Al](C)C=Cc1cccs1",
 ]
+
+
+@pytest.mark.parametrize("smiles", sorted(CASES))
+def test_group_14_metal_prefixes(smiles):
+    assert name_smiles(smiles) == CASES[smiles]
 
 
 @pytest.mark.parametrize("smiles", sorted(GUARDS))
@@ -61,9 +89,9 @@ def test_heteroatom_branch_with_unnamed_ligand_has_no_name():
 
 
 @pytest.mark.opsin
-@pytest.mark.parametrize("smiles", sorted(GUARDS))
+@pytest.mark.parametrize("smiles", sorted(CASES | GUARDS))
 def test_branch_names_round_trip(smiles):
     if not opsin_available():
         pytest.skip("OPSIN and Java are required")
-    check = verify_with_opsin(GUARDS[smiles], smiles)
+    check = verify_with_opsin((CASES | GUARDS)[smiles], smiles)
     assert check.status == "matched", check.to_dict()

@@ -1083,7 +1083,7 @@ def _name_supported_heteroatom_subgraph(
         )
     if symbol in {"P", "As", "Sb"}:
         return name_pnictogen_subgraph(mol, start_idx, exclude_atoms, upstream_atom, branch_namer, symbol)
-    if symbol in {"Si", "B"}:
+    if symbol in {"Si", "Ge", "Sn", "Pb", "B"}:
         return name_group_13_14_subgraph(mol, start_idx, exclude_atoms, upstream_atom, branch_namer)
     return None
 
