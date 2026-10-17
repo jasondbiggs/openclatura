@@ -1,4 +1,4 @@
-"""The R/S of a stereogenic -aminium nitrogen is cited in the name."""
+"""The R/S of a stereogenic quaternary nitrogen, -aminium or ammonio, is cited in the name."""
 
 import pytest
 
@@ -28,6 +28,14 @@ CASES = {
         "(NS,N'R)-N,N'-diethyl-N,N'-dimethyl-N'-(2-methylpropyl)-N-propylbutane-1,4-diaminium"
     ),
     "C[N@+](CC)(CCC)c1ccc(cc1)[N+](C)(C)C": "(S)-N-ethyl-N,N',N',N'-tetramethyl-N-propylbenzene-1,4-diaminium",
+    # Cited as an ammonio prefix, the nitrogen's descriptor goes inside the prefix.
+    "C[N@+](CC)(CCC)c1ccc(cc1)S(=O)(=O)[O-]": "4-((S)-ethyl(methyl)(propyl)ammonio)benzene-1-sulfonate",
+    "C[N@+](CC)(CCC)CC(=O)[O-]": "2-((S)-ethyl(methyl)(propyl)ammonio)acetate",
+    "C[N@@+](CC)(CCC)CC(=O)[O-]": "2-((R)-ethyl(methyl)(propyl)ammonio)acetate",
+    "C[N@+](CC)(CCC)C[C@@H](C)C(=O)[O-]": "(2R)-3-((S)-ethyl(methyl)(propyl)ammonio)-2-methylpropanoate",
+    "C[N@+](CC)(CCC)CC1=CC=CC=C1C[N@@+](C)(CC)CCC": (
+        "(S)-N-ethyl-N-((2-(((S)-ethyl(methyl)(propyl)ammonio)methyl)phenyl)methyl)-N-methylpropan-1-aminium"
+    ),
 }
 
 # Stereo that was already cited, and nitrogens that are not stereocentres.
@@ -38,6 +46,7 @@ GUARDS = {
     "C[N@+](C)(CC)c1ccccc1": "N-ethyl-N,N-dimethylbenzenaminium",
     "C[N+](C)(C)c1ccccc1": "N,N,N-trimethylbenzenaminium",
     "C[C@@H](CC)[N+](C)(C)C": "(2S)-N,N,N-trimethylbutan-2-aminium",
+    "C[N+](C)(C)c1ccc(cc1)S(=O)(=O)[O-]": "4-(trimethylammonio)benzene-1-sulfonate",
 }
 
 
@@ -54,6 +63,7 @@ def test_aminium_stereo_guards(smiles):
 def test_protonated_amine_nitrogen_takes_no_descriptor():
     # An N-H aminium nitrogen is not cited here, whatever RDKit perceives for it.
     assert name_smiles("C[N@H+](CC)c1ccccc1") == "N-ethyl-N-methylbenzenaminium"
+    assert name_smiles("C[N@H+](CC)c1ccc(cc1)S(=O)(=O)[O-]") == "4-(ethyl(methyl)ammonio)benzene-1-sulfonate"
 
 
 @pytest.mark.opsin
