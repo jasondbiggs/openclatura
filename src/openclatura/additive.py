@@ -3,6 +3,7 @@ from dataclasses import replace
 
 from .assembly_charge import positive_parent_ium_charges
 from .assembly_parts import AssemblyParts, SubstituentItem
+from .chalcogen_roles import VALIDATED_NOMENCLATURE_CHALCOGENS
 from .fusion.mancude import compare_actual_parent_to_implied_parent
 from .locants import parse_locant
 from .molecule import Molecule
@@ -74,7 +75,8 @@ def _respell_indicated_hydrogen(retained_name: str, sites: set[str]) -> str:
     if match is None:
         return retained_name
     spelled = ",".join(f"{locant}H" for locant in sorted(sites, key=parse_locant))
-    return f"{spelled}-{retained_name[match.end() :]}"
+    rest = retained_name[match.end() :]
+    return f"{spelled}-{rest}" if spelled else rest
 
 
 def _exocyclic_double_bond_site(mol: Molecule, atom_idx: int, numbered_path: list[int]) -> bool:
@@ -154,7 +156,7 @@ def add_indicated_hydrogens(mol: Molecule, parts: AssemblyParts, numbered_path: 
     """Add indicated hydrogen locants for retained ring names."""
 
     _add_parent_indicated_hydrogens(mol, parts, numbered_path, get_loc)
-    _cite_saturated_ium_hydrogen(mol, parts, numbered_path, get_loc)
+    _cite_cationic_ring_saturation(mol, parts, numbered_path, get_loc)
 
 
 def _add_parent_indicated_hydrogens(mol: Molecule, parts: AssemblyParts, numbered_path: list[int], get_loc) -> None:
@@ -557,78 +559,101 @@ def _add_parent_indicated_hydrogens(mol: Molecule, parts: AssemblyParts, numbere
         _recast_ring_ketone_hydrogens(mol, parts, numbered_path, get_loc)
 
 
-def _cite_saturated_ium_hydrogen(mol: Molecule, parts: AssemblyParts, numbered_path: list[int], get_loc) -> None:
-    """Cite hydrogen at an -ium ring atom that has no ring double bond.
+def _cite_cationic_ring_saturation(mol: Molecule, parts: AssemblyParts, numbered_path: list[int], get_loc) -> None:
+    """Cite the saturation of a cationic ring parent with oxo prefixes or a saturated ium atom.
 
-    The ium suffix states the hydrogen of an atom that keeps a ring double bond,
-    as in pyridin-1-ium. A saturated one needs its own citation: OPSIN reads a
-    ring -ium as one more bond to the atom and puts a ring double bond there
-    otherwise, so pyridin-1-ium-4-one reads as the 3H tautomer and
-    4H-pyran-1-ium-4-one does not parse. It is indicated hydrogen in front of the
-    parent, 1H-pyridin-1-ium-4-one, because added hydrogen cited against the ium
-    locant would read as 1(1H)-ium.
+    The cation outranks the ring's ketones (P-41), so they are oxo prefixes and
+    the parent is spelled as for its neutral oxo form with the ium suffix added
+    (P-73.1.2.1): the parent's indicated hydrogen takes the lowest saturated
+    locants and the rest are hydro prefixes, as in 2-oxo-2H-pyran-1-ium,
+    4-oxo-1,4-dihydropyridin-1-ium and 2,4-dioxo-1,2,3,4-tetrahydropyrimidin-1-ium.
+    A ring chalcogen has no pi bond in the neutral parent, so a protonated one
+    is not among those positions. Without these citations OPSIN reads a ring
+    -ium as one more bond to the atom and builds another tautomer.
     """
 
     metadata = parts.retained_parent_metadata
-    if metadata is None or not metadata.mancude_double_bonds:
+    if metadata is None or not metadata.mancude_double_bonds or parts.principal_group is not None:
         return
     atom_by_locant = {str(get_loc(idx)): idx for idx in numbered_path}
-    for charge in positive_parent_ium_charges(parts):
-        locant = charge.locant
-        atom_idx = atom_by_locant.get(locant)
-        if atom_idx is None or charge.charge != 1 or not _is_saturated_ring_site(mol, atom_idx, numbered_path):
-            continue
-        cited = [operation for operation in parts.hydro_operations if locant in operation.locants]
-        if cited:
-            # A ring ketone's NH is added hydrogen in the neutral parent,
-            # pyridin-4(1H)-one; here it stays in front of the parent.
-            for operation in cited:
-                if operation.key == "added_hydrogen" and operation.locants == (locant,):
-                    parts.hydro_operations[parts.hydro_operations.index(operation)] = replace(
-                        operation,
-                        key="indicated_hydrogen",
-                        reason="A saturated ium ring atom cites its own indicated hydrogen.",
-                    )
-            continue
-        atom = mol.atoms[atom_idx]
-        if atom.symbol not in {"O", "S", "Se", "Te"} or not (atom.total_h_count or atom.explicit_h_count):
-            continue
-        # A divalent chalcogen cannot hold the neutral parent's indicated
-        # hydrogen, so 4H-pyran-4-one puts it on the ketone carbon. Protonated,
-        # the chalcogen is the parent's one saturated position and takes the
-        # citation itself; the oxo carbon needs none. Any other saturated
-        # position would still need its own, so leave those alone.
-        if metadata.indicated_hydrogen_count != 1:
-            continue
-        oxo_locants = set()
-        for other_locant, other_idx in atom_by_locant.items():
-            if other_idx == atom_idx:
-                continue
-            if _is_oxo_ring_site(mol, other_idx, numbered_path):
-                oxo_locants.add(other_locant)
-            elif _is_saturated_ring_site(mol, other_idx, numbered_path):
-                break
-        else:
-            parts.hydro_operations = [
-                operation
-                for operation in parts.hydro_operations
-                if not (operation.operation_kind == "indicated_hydrogen" and set(operation.locants) <= oxo_locants)
-            ]
-            parts.indicated_hydrogens = [loc for loc in parts.indicated_hydrogens if loc not in oxo_locants]
-            if _name_indicated_hydrogen_locants(parts.retained_name) & oxo_locants:
-                # 4H-1-benzopyran spells the citation in its own stem.
-                parts.retained_name = _respell_indicated_hydrogen(parts.retained_name, {locant})
-                continue
-            parts.indicated_hydrogens.append(locant)
-            parts.hydro_operations.append(
-                HydroOperation(
-                    key="indicated_hydrogen",
-                    reason="A saturated ium ring atom cites its own indicated hydrogen.",
-                    locants=(locant,),
-                    atom_ids=(atom_idx,),
-                    operation_kind="indicated_hydrogen",
-                )
-            )
+    ium_atoms = {
+        atom_by_locant[charge.locant]
+        for charge in positive_parent_ium_charges(parts)
+        if charge.charge == 1 and charge.locant in atom_by_locant
+    }
+    if not ium_atoms or any(operation.operation_kind == "additive_hydrogen" for operation in parts.hydro_operations):
+        return
+    oxo_sites = {idx for idx in numbered_path if _is_oxo_ring_site(mol, idx, numbered_path)}
+    saturated_sites = {idx for idx in numbered_path if _is_saturated_ring_site(mol, idx, numbered_path)}
+    if not (ium_atoms & saturated_sites or oxo_sites):
+        return
+    quota = parent_indicated_hydrogen_quota(parts)
+    if quota is None:
+        return
+    saturated = sorted(
+        (
+            locant
+            for locant, idx in atom_by_locant.items()
+            if mol.atoms[idx].symbol not in VALIDATED_NOMENCLATURE_CHALCOGENS and idx in oxo_sites | saturated_sites
+        ),
+        key=parse_locant,
+    )
+    if len(saturated) < quota:
+        return
+    indicated, hydro = saturated[:quota], saturated[quota:]
+    # A substituted chalcogen, 1-methyl-4-oxo-4H-pyran-1-ium, has no bond to spare.
+    protonated_chalcogens = {
+        idx
+        for idx in ium_atoms & saturated_sites
+        if mol.atoms[idx].symbol in VALIDATED_NOMENCLATURE_CHALCOGENS
+        and (mol.atoms[idx].total_h_count or mol.atoms[idx].explicit_h_count)
+    }
+    chalcogen_locants = {str(get_loc(idx)) for idx in protonated_chalcogens}
+    if protonated_chalcogens and not _opsin_reads_ium_chalcogen_indicated_hydrogen(
+        mol, parts, {locant: atom_by_locant[locant] for locant in indicated}, protonated_chalcogens
+    ):
+        # TODO(opsin#343): OPSIN 2.9.0 rejects 4-oxo-4H-pyran-1-ium and its
+        # thiopyran and 1-benzopyran analogues
+        # (https://github.com/dan2097/opsin/issues/343). Until a fixed OPSIN is
+        # what verify_with_opsin runs, cite the chalcogen as a hydro position,
+        # 4-oxo-1,4-dihydropyran-1-ium, then drop this branch for the 4H form.
+        indicated, hydro = [], sorted(set(saturated) | chalcogen_locants, key=parse_locant)
+    if len(hydro) % 2:
+        return
+
+    cited = set(saturated) | chalcogen_locants
+    parts.hydro_operations = [
+        operation
+        for operation in parts.hydro_operations
+        if not (operation.operation_kind == "indicated_hydrogen" and set(operation.locants) <= cited)
+    ]
+    parts.indicated_hydrogens = [locant for locant in parts.indicated_hydrogens if locant not in cited]
+    if _name_indicated_hydrogen_locants(parts.retained_name):
+        # 4H-1-benzopyran spells its citation in the stem.
+        parts.retained_name = _respell_indicated_hydrogen(parts.retained_name, set(indicated))
+        indicated = []
+    _add_monocycle_hydro(parts, (len(indicated), 0, [atom_by_locant[locant] for locant in indicated + hydro]), get_loc)
+
+
+def _opsin_reads_ium_chalcogen_indicated_hydrogen(
+    mol: Molecule, parts: AssemblyParts, indicated: dict[str, int], chalcogen_atoms: set[int]
+) -> bool:
+    """Whether OPSIN builds a protonated ring chalcogen's parent from its indicated hydrogen.
+
+    OPSIN 2.9.0 lets a ring -ium atom take a double bond and then keeps the
+    indicated hydrogen of its own ring template, so it reads the cited one only
+    beside the chalcogen (2-oxo-2H-pyran-1-ium) or at the parent's own default
+    with a stem that spells none (9-oxo-9H-xanthen-10-ium).
+    """
+
+    default = (
+        set()
+        if _name_indicated_hydrogen_locants(parts.retained_name)
+        else set(parts.retained_parent_metadata.default_indicated_h)
+    )
+    return all(
+        locant in default or not chalcogen_atoms.isdisjoint(mol.get_neighbors(idx)) for locant, idx in indicated.items()
+    )
 
 
 def _apply_retained_oxo_carbon_hydrogen(mol: Molecule, parts: AssemblyParts, numbered_path: list[int], get_loc) -> bool:
