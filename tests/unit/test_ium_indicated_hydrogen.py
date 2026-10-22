@@ -8,9 +8,10 @@ from openclatura import name_smiles, opsin_available, verify_with_opsin
 # A cation outranks every neutral class (P-41), so a ketone, acid or alcohol on
 # the ring that carries the ium centre is a prefix, and the parent's saturation
 # is spelled as for its neutral oxo form: indicated hydrogen at the lowest
-# saturated locants, hydro prefixes for the rest. P-73.1.2.1 names
-# 2,2-dimethyl-1,3-dioxo-2,3-dihydro-1H-isoindol-2-ium this way
-# (lamalab-org/openclatura#134, #163).
+# saturated locants, hydro prefixes for the rest. P-73.1.2.1 puts the ketones
+# of 2,2-dimethyl-1,3-dioxo-2,3-dihydro-1H-isoindol-2-ium in prefixes the same
+# way; isoindole keeps openclatura's 2H-isoindole spelling, so its name below
+# cites the same structure as 1,3-dihydro-2H (lamalab-org/openclatura#134, #163).
 CASES = {
     "O=C1C=CC=C[OH+]1": "2-oxo-2H-pyran-1-ium",
     "O=C1C=CC=C[SH+]1": "2-oxo-2H-thiopyran-1-ium",
